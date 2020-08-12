@@ -1,0 +1,5 @@
+task: cifar10
+class_len: 10       ## class number of this task 
+save_labels: True   ## whether to save images label
+feature_size: 2048  ## feature length
+BS: 128             ## the batch size

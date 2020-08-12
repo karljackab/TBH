@@ -1,0 +1,3 @@
+task: cifar10       ## task name
+code_length: 32     ## length of hashing vector
+top_k: 10           ## retrieved number

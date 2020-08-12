@@ -1,0 +1,8 @@
+task: cifar10         ## task name
+batch_size: 400       ## batch size
+code_length: 32       ## length of hashing vector
+input_length: 2048    ## input length (corresponding to image extraction)
+continue_length: 1024  ## length of continue vector
+usage: 1              ## 1: generate code from every model weights, to evaluate weight performance
+                      ## 2: generate code from specific model weights
+model_weight: model-180000
