@@ -20,15 +20,22 @@ def get_all_record(pth):
     return sorted(list(timestep_list))
 
 def calculate_map(code_folder, at_top_k, title, result_folder):
+    if not os.path.exists(result_folder):
+        os.makedirs(result_folder)
+
     ## get all the generated code name
     timestep_list = get_all_record(code_folder)
 
     ## get MAP and plot MAP curve
     MAP_list = []
     for timestep in timestep_list:
+        if task == 'cifar10':
+            db_prefix = 'train'
+        else:
+            db_prefix = 'database'
         ## load the code to "db_record" and "test_record"
         db_record, test_record = \
-            f'database_{task}_{code_length}_{timestep}.mat', f'test_{task}_{code_length}_{timestep}.mat'
+            f'{db_prefix}_{task}_{code_length}_{timestep}.mat', f'test_{task}_{code_length}_{timestep}.mat'
         db_record, test_record = \
             sio.loadmat(os.path.join(code_folder, db_record)), \
             sio.loadmat(os.path.join(code_folder, test_record))

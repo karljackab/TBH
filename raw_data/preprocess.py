@@ -93,7 +93,7 @@ def nuswide_preprocess():
     with open(f'nuswide/database_label', 'w') as fw:
         for data in valid_img:
             img_name, labels = data
-            labels = [str(label) for label in labels if label in valid_class]   ## only store the class in valid category
+            labels = [str(label) for label in labels]
             img_name = os.path.join('nuswide', img_name)
             fw.write(f"{img_name}:{','.join(labels)}\n")
 
@@ -120,7 +120,7 @@ def nuswide_preprocess():
         for key in train_set:
             for data in train_set[key]:
                 img_name, labels = data
-                labels = [str(label) for label in labels if label in valid_class]   ## only store the class in valid category
+                labels = [str(label) for label in labels]
                 img_name = os.path.join('nuswide', img_name)
                 fw.write(f"{img_name}:{','.join(labels)}\n")
 
@@ -128,7 +128,7 @@ def nuswide_preprocess():
         for key in val_set:
             for data in val_set[key]:
                 img_name, labels = data
-                labels = [str(label) for label in labels if label in valid_class]   ## only store the class in valid category
+                labels = [str(label) for label in labels]
                 img_name = os.path.join('nuswide', img_name)
                 fw.write(f"{img_name}:{','.join(labels)}\n")
 

@@ -105,10 +105,10 @@ if __name__ == '__main__':
 
         ## change phase and file name
         new_phase = 'database'
-        wrapper.change_data_and_phase(new_file_name, new_phase)
         if task == 'cifar10':
             new_phase = 'train'
         new_file_name = os.path.join(REPO_PATH, 'data', f'{task}_{new_phase}.mat')
+        wrapper.change_data_and_phase(new_file_name, new_phase)
 
         ## evaluate again
         wrapper.test_all_weight(model_pth, code_folder)
@@ -120,10 +120,10 @@ if __name__ == '__main__':
 
         ## change phase and file name
         new_phase = 'database'
-        wrapper.change_data_and_phase(new_file_name, new_phase)
         if task == 'cifar10':
             new_phase = 'train'
         new_file_name = os.path.join(REPO_PATH, 'data', f'{task}_{new_phase}.mat')
+        wrapper.change_data_and_phase(new_file_name, new_phase)
 
         ### extract again
         wrapper.extract(os.path.join(model_pth, model_weight), code_folder, suffix='eval')

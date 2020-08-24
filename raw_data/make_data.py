@@ -195,14 +195,22 @@ if __name__ == '__main__':
 
     ## do the preprocessing based on different task
     if data_pth == 'cifar10':
-        preprocess.write_class_mapping(mode_list, data_pth)
+        if not os.path.exists(data_pth+'_extract/class_mapping.csv'):
+            preprocess.write_class_mapping(mode_list, data_pth)
     elif data_pth == 'coco':
         preprocess.coco_preprocess()
     elif data_pth == 'nuswide':
-        preprocess.nuswide_preprocess()
+        if not os.path.exists(f'nuswide/database_label') or \
+                not os.path.exists(f'nuswide/train_label') or \
+                not os.path.exists(f'nuswide/val_label'):
+            preprocess.nuswide_preprocess()
 
-    extractor = Xception(weights='imagenet', include_top=False, pooling='avg')
+    # extractor = Xception(weights='imagenet', include_top=False, pooling='avg')
+    extractor = Xception(weights=None, include_top=False, pooling='avg')
     print(extractor.summary())
+    if config['weight_pth'] is not None:
+        print(f'load weight {config["weight_pth"]}')
+        extractor.load_weights(config['weight_pth'], by_name=True)
 
     ## extract data
     extract_data(extractor, output_pth, feature_size, mode_list, data_pth, class_len, save_labels)
