@@ -1,6 +1,6 @@
-task: cifar10
-class_len: 10       ## class number of this task 
+task: nuswide
+class_len: 81       ## class number of this task 
 save_labels: True   ## whether to save images label
 feature_size: 2048  ## feature length
 BS: 256             ## the batch size
-weight_pth: result/cifar10_res/16_0.9187.h5
+weight_pth: result/nuswide_v1/3_0.3593.h5

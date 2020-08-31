@@ -9,6 +9,45 @@ from keras.preprocessing.image import ImageDataGenerator
 
 from keras import backend as K
 
+def get_label_pos_portion(task):
+    if task == 'nuswide':
+        if not os.path.exists(f'nuswide/database_label') or \
+                not os.path.exists(f'nuswide/train_label') or \
+                not os.path.exists(f'nuswide/val_label'):
+            preprocess.nuswide_preprocess()
+        
+        portion = np.zeros((81)).astype('float32')
+
+        with open('nuswide/database_label', 'r') as f:
+            tot_cnt = 0
+            for row in f.readlines():
+                tot_cnt += 1
+                row = row.strip()
+                _, label_list = row.split(':')
+                label_list = np.array(list(map(lambda x: int(x),label_list.split(','))))
+                portion[label_list] += 1
+            portion /= tot_cnt
+    elif task == 'coco':
+        if not os.path.exists('coco/train_label') or not os.path.exists('coco/val_label')\
+                or not os.path.exists('coco/database_label'):
+            preprocess.coco_preprocess()
+        
+        portion = np.zeros((80)).astype('float32')
+        with open('coco/train_label', 'r') as f:
+            tot_cnt = 0
+            for row in f.readlines():
+                tot_cnt += 1
+                row = row.strip()
+                _, label_list = row.split(':')
+                label_list = np.array(list(map(lambda x: int(x),label_list.split(','))))
+                portion[label_list] += 1
+            portion /= tot_cnt
+    
+    # for i in range(portion.shape[0]):
+    #     print(f'{i}: {portion[i]}')
+    # print(portion.tolist())
+    return portion
+
 def recall(y_true, y_pred):
     """Recall metric.
 
@@ -22,6 +61,11 @@ def recall(y_true, y_pred):
     recall = true_positives / (possible_positives + K.epsilon())
     return recall
 
+def get_true_pos(y_true, y_pred):
+    return K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+def get_pred_pos(y_true, y_pred):
+    return K.sum(K.round(K.clip(y_pred, 0, 1)))
+
 def precision(y_true, y_pred):
     """Precision metric.
 
@@ -33,6 +77,7 @@ def precision(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
     precision = true_positives / (predicted_positives + K.epsilon())
+
     return precision
 
 def f1(y_true, y_pred):
@@ -40,22 +85,24 @@ def f1(y_true, y_pred):
     rec = recall(y_true, y_pred)
     return 2*((prec*rec)/(prec+rec+K.epsilon()))
 
-def create_weighted_binary_crossentropy(zero_weight, one_weight):
-
+# def create_weighted_binary_crossentropy(zero_weight, one_weight):
+def create_weighted_binary_crossentropy(label_portion):
     def weighted_binary_crossentropy(y_true, y_pred):
-
-        # Original binary crossentropy (see losses.py):
-        # K.mean(K.binary_crossentropy(y_true, y_pred), axis=-1)
-
         # Calculate the binary crossentropy
-        b_ce = K.binary_crossentropy(y_true, y_pred)
+        # b_ce = K.binary_crossentropy(y_true, y_pred)
+        w = y_true*K.exp(1.-label_portion) + (1.-y_true)*K.exp(label_portion)
+        b_ce = -(y_true*K.log(y_pred) + (1.-y_true)*K.log(1-y_pred))
+        # b_ce = K.print_tensor(b_ce, message='b_ce = ')
+        # w = K.print_tensor(w, message='w = ')
+        weighted_b_ce = w * b_ce
+        # weighted_b_ce = K.print_tensor(weighted_b_ce, message='weighted_b_ce = ')
 
         # Apply the weights
-        weight_vector = y_true * one_weight + (1. - y_true) * zero_weight
-        weighted_b_ce = weight_vector * b_ce
+        # weight_vector = y_true * one_weight + (1. - y_true) * zero_weight
+        # weighted_b_ce = weight_vector * b_ce
 
         # Return the mean error
-        return K.mean(weighted_b_ce)
+        return K.mean(weighted_b_ce)*80
 
     return weighted_binary_crossentropy
 
@@ -111,25 +158,33 @@ class Dataset(keras.utils.Sequence):
                     else:
                         self.imgs_pth.append((file_pth, cur_label))
                 iter_idx += 1
-        # ## process MSCOCO dataset
-        # elif data_pth == 'coco':
-        #     if mode == 'test':
-        #         mode = 'val'
-        #     label_pth = f'coco/{mode}_label'
+        ## process MSCOCO dataset
+        elif data_pth == 'coco':
+            if not os.path.exists('coco/train_label') or not os.path.exists('coco/val_label')\
+                    or not os.path.exists('coco/database_label'):
+                preprocess.coco_preprocess()
 
-        #     with open(label_pth, 'r') as f:
-        #         for row in f.readlines():
-        #             row = row.strip()
-        #             img_name, label_list = row.split(':')
-        #             label_list = list(map(lambda x: int(x),label_list.split(',')))
+            if mode == 'test':
+                mode = 'val'
 
-        #             img_mode = img_name.split('_')[1]
-        #             if img_mode == 'train2014':
-        #                 img_pth = 'coco/train2014'
-        #             elif img_mode == 'val2014':
-        #                 img_pth = 'coco/val2014'
-        #             file_pth = os.path.join(img_pth, img_name)
-        #             self.imgs_pth.append((file_pth, label_list))
+            # if mode == 'train':
+            #     mode = 'database'
+
+            label_pth = f'coco/{mode}_label'
+
+            with open(label_pth, 'r') as f:
+                for row in f.readlines():
+                    row = row.strip()
+                    img_name, label_list = row.split(':')
+                    label_list = list(map(lambda x: int(x),label_list.split(',')))
+
+                    img_mode = img_name.split('_')[1]
+                    if img_mode == 'train2014':
+                        img_pth = 'coco/train2014'
+                    elif img_mode == 'val2014':
+                        img_pth = 'coco/val2014'
+                    file_pth = os.path.join(img_pth, img_name)
+                    self.imgs_pth.append((file_pth, label_list))
         ## process NUS-WIDE dataset
         elif data_pth == 'nuswide':
             if not os.path.exists(f'nuswide/database_label') or \
@@ -178,8 +233,8 @@ class Dataset(keras.utils.Sequence):
             sub_idx += 1
         assert sub_idx == self.BS
         
-        if self.mode == 'train':
-            x = self.datagen.flow(x, shuffle=False).next()
+        # if self.mode == 'train':
+        #     x = self.datagen.flow(x, shuffle=False).next()
 
         return x, y
 
